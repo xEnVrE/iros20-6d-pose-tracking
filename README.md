@@ -18,7 +18,7 @@ This is the official implementation of our paper "se(3)-TrackNet: Data-driven 6D
 	year = {2020},
 	month = {10/2020},
 	url = {http://arxiv.org/abs/2007.13866},
-	author = {Bowen Wen and Chaitanya Mitash and Baozhang Ren and Kostas Bekris}
+	author = {Wen, Bowen and Mitash, Chaitanya and Ren, Baozhang and Bekris, Kostas}
 }
 ```
 
