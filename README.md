@@ -17,9 +17,8 @@ This is the official implementation of our paper "se(3)-TrackNet: Data-driven 6D
 	booktitle = {IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS)},
 	year = {2020},
 	month = {10/2020},
-	address = {Las Vegas, NV},
 	url = {http://arxiv.org/abs/2007.13866},
-	author = {Wen, B. and Mitash, C. and Ren, B. and Bekris, K. E.}
+	author = {Bowen Wen and Chaitanya Mitash and Baozhang Ren and Kostas Bekris}
 }
 ```
 
