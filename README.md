@@ -9,6 +9,8 @@ This is the official implementation of our paper "se(3)-TrackNet: Data-driven 6D
 **Applications:** model-based RL, manipulation, AR/VR, human-robot-interaction, automatic 6D pose labeling.
 
 
+**This repo can be used when you have the CAD model of the target object. When such model is not available, checkout our another repo [BundleTrack](https://github.com/wenbowen123/BundleTrack), which can be instantly used for 6D pose tracking of novel unknown objects without needing CAD models**
+
 
 # Bibtex
 ```bibtex
@@ -88,9 +90,13 @@ Current benchmark:
 More details are in the paper and supplementary video.
 
 # Dependency
-Create your anaconda environment by `conda env create -f environment.yml`
+There are 2 options:
+- Option 1: Create your anaconda environment by `conda env create -f environment.yml`. Then `source activate bowen`
 
-Then `source activate bowen`
+- Option 2 (Recommended): Use docker and pull the pre-built image 
+	```
+	docker pull wenbowen123/se3_tracknet:latest
+	```
 
 
 # Data Download
