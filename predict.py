@@ -192,7 +192,11 @@ class Tracker:
 			bbox = compute_bbox(ob2cam, self.K, self.object_width, scale=(1000, 1000, 1000))
 			rgb, depth = self.renderer.render([ob2cam])
 			depth = (depth*1000).astype(np.uint16)
-			render_rgb, render_depth = crop_bbox(rgb, depth, bbox, self.image_size)
+			try:
+				render_rgb, render_depth = crop_bbox(rgb, depth, bbox, self.image_size)
+			except:
+				print('fixed bbox')
+				render_rgb, render_depth = crop_bbox_fixed(rgb, depth, bbox, self.image_size)
 		return render_rgb, render_depth
 
 	def on_track(self, prev_pose, current_rgb, current_depth, gt_A_in_cam=None,gt_B_in_cam=None, debug=False, samples=1):
@@ -213,7 +217,11 @@ class Tracker:
 			bb = compute_bbox(sample_pose, self.K, self.object_width, scale=(1000, 1000, 1000))
 			bbs.append(bb)
 			sample_poses.append(sample_pose)
-			rgbB, depthB = crop_bbox(current_rgb, current_depth, bb, self.image_size)
+			try:
+				rgbB, depthB = crop_bbox(current_rgb, current_depth, bb, self.image_size)
+			except:
+				print('fixed bbox')
+				rgbB, depthB = crop_bbox_fixed(current_rgb, current_depth, bb, self.image_size)
 			rgbBs.append(rgbB)
 			depthBs.append(depthB)
 

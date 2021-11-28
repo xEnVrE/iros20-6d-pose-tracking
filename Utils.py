@@ -359,7 +359,63 @@ def crop_bbox(color, depth, boundingbox, output_size=(100, 100), seg=None):
   else:
     return final_rgb, final_depth
 
+def crop_bbox_fixed(color, depth, boundingbox, output_size=(100, 100), seg=None):
+  left = np.min(boundingbox[:, 1])
+  right = np.max(boundingbox[:, 1])
+  top = np.min(boundingbox[:, 0])
+  bottom = np.max(boundingbox[:, 0])
 
+  left = np.max([0, left])
+  right = np.min([color.shape[1], right])
+  top = np.max([0, top])
+  bottom = np.min([color.shape[0], bottom])
+
+  top = max(top, 0)
+  left = max(left, 0)
+  bottom = max(bottom, 0)
+  right = max(right, 0)
+
+  h, w, c = color.shape
+
+  top = min(top, h)
+  left = min(left, w)
+  bottom = min(bottom, h)
+  right = min(right, w)
+
+  crop_w = right - left
+  crop_h = bottom - top
+  color_crop = np.zeros((crop_h, crop_w, 3), dtype=color.dtype)
+  depth_crop = np.zeros((crop_h, crop_w), dtype=np.float)
+  seg_crop = np.zeros((crop_h, crop_w), dtype=np.uint8)
+  top_offset = abs(min(top, 0))
+  bottom_offset = min(crop_h - (bottom - h), crop_h)
+  right_offset = min(crop_w - (right - w), crop_w)
+  left_offset = abs(min(left, 0))
+
+  color_crop[top_offset:bottom_offset, left_offset:right_offset, :] = color[top:bottom, left:right, :]
+  depth_crop[top_offset:bottom_offset, left_offset:right_offset] = depth[top:bottom, left:right]
+  if top!=bottom and left!=right:
+    resized_rgb = cv2.resize(color_crop, output_size, interpolation=cv2.INTER_NEAREST)
+    resized_depth = cv2.resize(depth_crop, output_size, interpolation=cv2.INTER_NEAREST)
+  else:
+    print("Object out of image boundaries!")
+    resized_rgb = cv2.resize(color, output_size, interpolation=cv2.INTER_NEAREST)
+    resized_depth = cv2.resize(depth, output_size, interpolation=cv2.INTER_NEAREST)
+
+  if seg is not None:
+    seg_crop[top_offset:bottom_offset, left_offset:right_offset] = seg[top:bottom, left:right]
+    resized_seg = cv2.resize(seg_crop, output_size, interpolation=cv2.INTER_NEAREST)
+    final_seg = resized_seg.copy()
+
+  mask_rgb = resized_rgb != 0
+  mask_depth = resized_depth != 0
+  resized_depth = resized_depth.astype(np.uint16)
+  final_rgb = resized_rgb * mask_rgb
+  final_depth = resized_depth * mask_depth
+  if seg is not None:
+    return final_rgb, final_depth, final_seg
+  else:
+    return final_rgb, final_depth
 
 def normalize_rotation_matrix(R):
   R[:,0] = R[:,0]/np.linalg.norm(R[:,0])
