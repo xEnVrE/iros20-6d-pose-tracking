@@ -132,7 +132,11 @@ class Tracker:
 		self.object_cloud = o3d.io.read_point_cloud(dataset_info['models'][0]['model_path'])
 		self.object_cloud = self.object_cloud.voxel_down_sample(voxel_size=0.005)
 
+
 		print('self.object_cloud loaded and downsampled')
+		print('**')
+		print(self.object_cloud)
+		print('**')
 		if 'object_width' not in dataset_info:
 			object_max_width = compute_obj_max_width(self.object_cloud)
 			bounding_box = dataset_info['boundingbox']
