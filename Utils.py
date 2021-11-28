@@ -99,8 +99,10 @@ def adi(pred,gt,model):
 
 
 def compute_cloud_diameter(points):
-  hull = ConvexHull(points)
-  hull_points = points[hull.vertices]
+  p = np.asarray(points.points)
+  print(p.shape)
+  hull = ConvexHull(p)
+  hull_points = p[hull.vertices]
   distances = distance_matrix(hull_points, hull_points)
   return np.max(distances)
 
