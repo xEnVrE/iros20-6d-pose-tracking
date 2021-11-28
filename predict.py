@@ -33,6 +33,7 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
+import eigen
 import open3d as o3d
 import sys,math,random
 import os,subprocess
@@ -70,7 +71,7 @@ from functools import partial
 from itertools import repeat
 import multiprocessing as mp
 from vispy_renderer import VispyRenderer
-
+from pyquaternion import Quaternion
 
 random.seed(0)
 np.random.seed(0)
@@ -462,45 +463,58 @@ def predictSequenceYcb():
 	tracker = Tracker(dataset_info, images_mean, images_std,ckpt_dir)
 	print('gt_poses[0]=\n',gt_poses[start_frame])
 
-	if init=='gt':
-		prev_pose = gt_poses[start_frame].copy()
-	elif init=='posecnn':
-		with open('{}/image_sets/keyframe.txt'.format(args.ycb_dir),'r') as ff:
-			lines = ff.readlines()
-		seq_frames = []
-		for i in range(len(lines)):
-			seq_frames.append(lines[i].rstrip())
-		neighbor = 0
-		while 1:
-			seq_frame_str= '%04d/%06d'%(seq_id,start_frame+neighbor)
-			if seq_frame_str in seq_frames:
-				start_frame = start_frame+neighbor
-				index = seq_frames.index(seq_frame_str)
-				break
-			seq_frame_str= '%04d/%06d'%(seq_id,start_frame-neighbor)
-			if seq_frame_str in seq_frames:
-				start_frame = start_frame-neighbor
-				index = seq_frames.index(seq_frame_str)
-				break
-			neighbor += 1
-		prev_pose = use_posecnn_res(class_id,seq_frame_str)
-	elif init=='poserbpf':
-		seqs = U.findClassContainedVideosYcb(class_id,testset=True)
-		seqs.sort()
-		res_dir = '{}/YCB_Video_toolbox/PoseRBPF_Results/YCB_results_RGBD/'.format(args.ycb_dir)
-		folders = sorted(os.listdir(res_dir))
-		cur_res_dir = res_dir+folders[class_id-1]+'/'
-		cur_res_dir = cur_res_dir+'seq_{}/'.format(seqs.index(seq_id)+1)
-		print('poserbpf cur_res_dir\n',cur_res_dir)
-		file_dir = glob.glob(cur_res_dir+'Pose*.txt')[0]
-		with open(file_dir,'r') as ff:
-			line = ff.readlines()[0].rstrip()
-		pose = line.split()[2:]
-		tmp = np.eye(4)
-		tmp[:3,3] = pose[:3]
-		q_wxyz = pose[3:]
-		tmp[:3,:3] = T.quaternion_matrix(q_wxyz)[:3,:3]
-		prev_pose = tmp.copy()
+	# if init=='gt':
+	prev_pose = gt_poses[start_frame].copy()
+	prev_pose[0, 3] += 0.05
+	prev_pose[1, 3] += 0.05
+	prev_pose[2, 3] += 0.05
+	m = prev_pose[0:3, 0:3]
+	mEigen = eigen.Matrix3d(m)
+	euler = np.array(mEigen.eulerAngles(2, 1, 0))
+	euler += 10.0 * np.pi / 180.0
+	rot_z = Quaternion(axis = [0.0, 0.0, 1.0], angle = euler[0]).rotation_matrix
+	rot_y = Quaternion(axis = [0.0, 1.0, 0.0], angle = euler[1]).rotation_matrix
+	rot_x = Quaternion(axis = [1.0, 0.0, 0.0], angle = euler[2]).rotation_matrix
+	prev_pose[0:3, 0:3] = rot_z @ rot_y @ rot_x
+	print(prev_pose)
+
+	# elif init=='posecnn':
+	# 	with open('{}/image_sets/keyframe.txt'.format(args.ycb_dir),'r') as ff:
+	# 		lines = ff.readlines()
+	# 	seq_frames = []
+	# 	for i in range(len(lines)):
+	# 		seq_frames.append(lines[i].rstrip())
+	# 	neighbor = 0
+	# 	while 1:
+	# 		seq_frame_str= '%04d/%06d'%(seq_id,start_frame+neighbor)
+	# 		if seq_frame_str in seq_frames:
+	# 			start_frame = start_frame+neighbor
+	# 			index = seq_frames.index(seq_frame_str)
+	# 			break
+	# 		seq_frame_str= '%04d/%06d'%(seq_id,start_frame-neighbor)
+	# 		if seq_frame_str in seq_frames:
+	# 			start_frame = start_frame-neighbor
+	# 			index = seq_frames.index(seq_frame_str)
+	# 			break
+	# 		neighbor += 1
+	# 	prev_pose = use_posecnn_res(class_id,seq_frame_str)
+	# elif init=='poserbpf':
+	# 	seqs = U.findClassContainedVideosYcb(class_id,testset=True)
+	# 	seqs.sort()
+	# 	res_dir = '{}/YCB_Video_toolbox/PoseRBPF_Results/YCB_results_RGBD/'.format(args.ycb_dir)
+	# 	folders = sorted(os.listdir(res_dir))
+	# 	cur_res_dir = res_dir+folders[class_id-1]+'/'
+	# 	cur_res_dir = cur_res_dir+'seq_{}/'.format(seqs.index(seq_id)+1)
+	# 	print('poserbpf cur_res_dir\n',cur_res_dir)
+	# 	file_dir = glob.glob(cur_res_dir+'Pose*.txt')[0]
+	# 	with open(file_dir,'r') as ff:
+	# 		line = ff.readlines()[0].rstrip()
+	# 	pose = line.split()[2:]
+	# 	tmp = np.eye(4)
+	# 	tmp[:3,3] = pose[:3]
+	# 	q_wxyz = pose[3:]
+	# 	tmp[:3,:3] = T.quaternion_matrix(q_wxyz)[:3,:3]
+	# 	prev_pose = tmp.copy()
 
 
 	pred_poses = [prev_pose]
