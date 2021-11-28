@@ -433,17 +433,18 @@ def getResultsYcb():
 			np.savetxt(out_dir+'seq{}/%07d.txt'.format(seq_id)%(i),pred_poses[i])
 
 
-def predictSequenceYcb():
+def predictSequenceYcb(reboot_sequence_id, reboot_class_id):
 	init = 'gt'
-	seq_id = 50
+	seq_id = reboot_sequence_id
 	test_data_path = '{}/data_organized/%04d'.format(args.ycb_dir)%(seq_id)
-	class_id = 4
-	if args.class_id is not None:
-		class_id = args.class_id
+	class_id = reboot_class_id
+	# if args.class_id is not None:
+	# 	class_id = args.class_id
 	start_frame = 0
 	reinit_frames = ''
 	if args.reinit_frames is not None:
 		reinit_frames = args.reinit_frames.split(',')
+		print('******************************************************')
 		print('reinit_frames',reinit_frames)
 	samples = 1
 	rgb_files = glob.glob(os.path.join(test_data_path,'color/*'))
@@ -453,6 +454,7 @@ def predictSequenceYcb():
 	gt_poses = []
 	gt_pose_files = glob.glob(os.path.join(test_data_path,'pose_gt/{}/*'.format(class_id)))
 	gt_pose_files.sort()
+
 	seg_files = glob.glob(os.path.join(test_data_path,'seg/*'))
 	seg_files.sort()
 	for f in gt_pose_files:
@@ -523,6 +525,7 @@ def predictSequenceYcb():
 	K = tracker.K.copy()
 
 	out_dir = outdir
+
 	os.makedirs(out_dir,exist_ok=True)
 	tmp = cv2.imread(depth_files[0],cv2.IMREAD_UNCHANGED)
 	H = tmp.shape[0]
@@ -548,28 +551,28 @@ def predictSequenceYcb():
 		prev_pose = cur_pose.copy()
 		pred_poses.append(cur_pose)
 
-		model = copy.deepcopy(tracker.object_cloud)
-		model.transform(cur_pose)
-		K = tracker.K.copy()
-		uvs = project_points(np.asarray(model.points),K)
-		cur_bgr = cv2.cvtColor(rgb_viz,cv2.COLOR_RGB2BGR)
-		for ii in range(len(uvs)):
-			cv2.circle(cur_bgr,(uvs[ii,0],uvs[ii,1]),radius=1,color=(0,255,255),thickness=-1)
-		cv2.putText(cur_bgr,"frame:{}".format(i), (W//2,H-50), cv2.FONT_HERSHEY_SIMPLEX, fontScale=1,thickness=4,color=(255,0,0))
-		cv2.imshow('1',cur_bgr)
-		if debug:
-			cv2.imwrite(out_dir+'%07d.png'%(i),cur_bgr)
-		cur_bgr = cv2.resize(cur_bgr,(W//2,H//2))
-		if i==1:
-			cv2.waitKey(1)
-		else:
-			cv2.waitKey(1)
+		# model = copy.deepcopy(tracker.object_cloud)
+		# model.transform(cur_pose)
+		# K = tracker.K.copy()
+		# uvs = project_points(np.asarray(model.points),K)
+		# cur_bgr = cv2.cvtColor(rgb_viz,cv2.COLOR_RGB2BGR)
+		# for ii in range(len(uvs)):
+		# 	cv2.circle(cur_bgr,(uvs[ii,0],uvs[ii,1]),radius=1,color=(0,255,255),thickness=-1)
+		# cv2.putText(cur_bgr,"frame:{}".format(i), (W//2,H-50), cv2.FONT_HERSHEY_SIMPLEX, fontScale=1,thickness=4,color=(255,0,0))
+		# cv2.imshow('1',cur_bgr)
+		# if debug:
+		# 	cv2.imwrite(out_dir+'%07d.png'%(i),cur_bgr)
+		# cur_bgr = cv2.resize(cur_bgr,(W//2,H//2))
+		# if i==1:
+		# 	cv2.waitKey(1)
+		# else:
+		# 	cv2.waitKey(1)
 	pred_poses = np.array(pred_poses)
 
 	adi_errs = []
 	for i in range(len(pred_poses)):
-		np.savetxt(out_dir+'%05d.txt'%(i), pred_poses[i])
-		np.savetxt(out_dir+'%05dgt.txt'%(i),gt_poses[i])
+		np.savetxt(out_dir+'/%05d.txt'%(i), pred_poses[i])
+		# np.savetxt(out_dir+'%05dgt.txt'%(i),gt_poses[i])
 		err = U.adi(pred_poses[i],gt_poses[i],tracker.object_cloud)
 		adi_errs.append(err)
 
@@ -630,7 +633,7 @@ def predictSequenceMyData():
 
 if __name__ == '__main__':
 	parser = argparse.ArgumentParser()
-	parser.add_argument('--ycb_dir', default='/media/bowen/e25c9489-2f57-42dd-b076-021c59369fec/DATASET/Tracking/YCB_Video_Dataset')
+	parser.add_argument('--ycb_dir', default='/home/hsp-user/YCB_Video_dataset/')
 	parser.add_argument('--YCBInEOAT_dir', default='/media/bowen/e25c9489-2f57-42dd-b076-021c59369fec/catkin_ws/src/iros20_dataset/video_rosbag/IROS_SELECTED/FINISHED_LABEL.iros_submission_version/bleach0')
 	parser.add_argument('--train_data_path', help="train_data_path path", default="None", type=str)
 	parser.add_argument('--class_id', default=-1, type=int, help='class id in YCB Video')
@@ -639,26 +642,93 @@ if __name__ == '__main__':
 	parser.add_argument('--outdir', help="save res dir", type=str, default='/home/bowen/debug/')
 	parser.add_argument('--reinit_frames', type=str, default=None,help='reinit to compare with PoseRBPF')
 
+	parser.add_argument('--object_name', type=str)
+	parser.add_argument('--video_sequence', type=str)
+
 	args = parser.parse_args()
 
-	ckpt_dir = args.ckpt_dir
-	mean_std_path = args.mean_std_path
+	# ckpt_dir = args.ckpt_dir
+	# mean_std_path = args.mean_std_path
 
-	print('ckpt_dir:',ckpt_dir)
+	# print('ckpt_dir:',ckpt_dir)
 
 	train_data_path = args.train_data_path
-	outdir = args.outdir
+	outdir = os.path.join('./output', args.object_name, 'ycb', 'seq' + str(int(args.video_sequence)))
+	outdir += '/'
+	os.makedirs(outdir, exist_ok = True)
 
-	dataset_info_path = os.path.join(train_data_path,'../dataset_info.yml')
-	print('dataset_info_path',dataset_info_path)
-	with open(dataset_info_path,'r') as ff:
+	# dataset_info_path = os.path.join(train_data_path,'../dataset_info.yml')
+	# print('dataset_info_path',dataset_info_path)
+	with open('./info.yml','r') as ff:
 		dataset_info = yaml.safe_load(ff)
 
-	images_mean = np.load(os.path.join(mean_std_path, "mean.npy"))
-	images_std = np.load(os.path.join(mean_std_path, "std.npy"))
+	names_map = {
+                '002_master_chef_can' : 1,
+                '003_cracker_box' : 2,
+                '004_sugar_box' : 3,
+                '005_tomato_soup_can' : 4,
+                '006_mustard_bottle' : 5,
+                '007_tuna_fish_can' : 6,
+                '008_pudding_box' : 7,
+                '009_gelatin_box' : 8,
+                '010_potted_meat_can' : 9,
+                '011_banana' : 10,
+                '019_pitcher_base' : 11,
+                '021_bleach_cleanser' : 12,
+                '024_bowl' : 13,
+                '025_mug' : 14,
+                '035_power_drill' : 15,
+                '036_wood_block' : 16,
+                '037_scissors' : 17,
+                '040_large_marker' : 18,
+                '051_large_clamp' : 19,
+                '052_extra_large_clamp' : 20,
+                '061_foam_brick' : 21
+                }
 
-	# predictSequenceYcb()
-	# getResultsYcb()
-	predictSequenceMyData()
+	ckpt_root = '/home/hsp-user/iros20-6d-pose-tracking/YCB_weights/' + '_'.join(args.object_name.split('_')[1:])
+	ckpt_map = {
+                '002_master_chef_can' : ckpt_root + '/model_epoch180.pth.tar',
+                '003_cracker_box' : ckpt_root + '/model_epoch165.pth.tar',
+                '004_sugar_box' : ckpt_root + '/model_epoch150.pth.tar',
+                '005_tomato_soup_can' : ckpt_root + '/model_epoch270.pth.tar',
+                '006_mustard_bottle' : ckpt_root + '/model_epoch150.pth.tar',
+                '007_tuna_fish_can' : ckpt_root + '/model_epoch230.pth.tar',
+                '008_pudding_box' : ckpt_root + '/model_epoch180.pth.tar',
+                '009_gelatin_box' : ckpt_root + '/model_last.pth.tar',
+                '010_potted_meat_can' : ckpt_root + '/model_epoch210.pth.tar',
+                '011_banana' : ckpt_root + '/model_epoch160.pth.tar',
+                '019_pitcher_base' : ckpt_root + '/model_epoch160.pth.tar',
+                '021_bleach_cleanser' : ckpt_root + '/model_best_val.pth.tar',
+                '024_bowl' : ckpt_root + '/model_epoch225.pth.tar',
+                '025_mug' : ckpt_root + '/model_epoch235.pth.tar',
+                '035_power_drill' : ckpt_root + '/model_epoch215.pth.tar',
+                '036_wood_block' : ckpt_root + '/model_epoch175.pth.tar',
+                '037_scissors' : ckpt_root + '/model_best_val.pth.tar',
+                '040_large_marker' : ckpt_root + '/model_epoch240.pth.tar',
+                '051_large_clamp' : ckpt_root + '/model_epoch165.pth.tar',
+                '052_extra_large_clamp' : ckpt_root + '/model_best_val.pth.tar',
+                '061_foam_brick' : ckpt_root + '/model_epoch155.pth.tar'
+                }
 
 
+	ckpt_dir = ckpt_map[args.object_name]
+	images_mean = np.load(os.path.join(ckpt_root, "mean.npy"))
+	images_std = np.load(os.path.join(ckpt_root, "std.npy"))
+
+	dataset_info['models'][0]['model_path'] = '/home/hsp-user/YCB_Video_dataset/models/' + args.object_name + '/textured.ply'
+	dataset_info['models'][0]['obj_path'] = '/home/hsp-user/YCB_Video_dataset/models/' + args.object_name + '/textured.obj'
+
+	print('*********************************************************')
+	print(args.object_name)
+	print('id: ' + str(names_map[args.object_name]))
+	print('video_id: ' + str(int(args.video_sequence)))
+	print('mean: ' + os.path.join(ckpt_root, "mean.npy"))
+	print('std: ' + os.path.join(ckpt_root, "std.npy"))
+	print('ckpt: ' + ckpt_dir)
+	print('ply: ' + dataset_info['models'][0]['model_path'])
+	print('obj: ' + dataset_info['models'][0]['obj_path'])
+	print('out: ' + outdir)
+	print('*********************************************************')
+
+	predictSequenceYcb(int(args.video_sequence), names_map[args.object_name])
