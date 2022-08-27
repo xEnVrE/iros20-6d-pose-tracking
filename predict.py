@@ -616,35 +616,94 @@ def predictSequenceMyData():
 
 if __name__ == '__main__':
 	parser = argparse.ArgumentParser()
-	parser.add_argument('--ycb_dir', default='/media/bowen/e25c9489-2f57-42dd-b076-021c59369fec/DATASET/Tracking/YCB_Video_Dataset')
-	parser.add_argument('--YCBInEOAT_dir', default='/media/bowen/e25c9489-2f57-42dd-b076-021c59369fec/catkin_ws/src/iros20_dataset/video_rosbag/IROS_SELECTED/FINISHED_LABEL.iros_submission_version/bleach0')
-	parser.add_argument('--train_data_path', help="train_data_path path", default="None", type=str)
+	parser.add_argument('--ycb_dir', default='/home/user/iros20-6d-pose-tracking/datasets/YCB_Video_Dataset')
 	parser.add_argument('--class_id', default=-1, type=int, help='class id in YCB Video')
-	parser.add_argument('--ckpt_dir', type=str)
-	parser.add_argument('--mean_std_path', type=str)
-	parser.add_argument('--outdir', help="save res dir", type=str, default='/home/bowen/debug/')
-	parser.add_argument('--reinit_frames', type=str, default=None,help='reinit to compare with PoseRBPF')
+	parser.add_argument('--outdir', help="save res dir", type=str, default='/home/user/iros20-6d-pose-tracking/output')
+	parser.add_argument('--object_name', type=str)
+	parser.add_argument('--video_sequence', type=str)
 
 	args = parser.parse_args()
 
-	ckpt_dir = args.ckpt_dir
-	mean_std_path = args.mean_std_path
-
-	print('ckpt_dir:',ckpt_dir)
-
-	train_data_path = args.train_data_path
 	outdir = args.outdir
 
-	dataset_info_path = os.path.join(train_data_path,'../dataset_info.yml')
-	print('dataset_info_path',dataset_info_path)
+	dataset_info_path = './info.yml'
 	with open(dataset_info_path,'r') as ff:
 		dataset_info = yaml.safe_load(ff)
 
-	images_mean = np.load(os.path.join(mean_std_path, "mean.npy"))
-	images_std = np.load(os.path.join(mean_std_path, "std.npy"))
+	names_map = {
+                '002_master_chef_can' : 1,
+                '003_cracker_box' : 2,
+                '004_sugar_box' : 3,
+                '005_tomato_soup_can' : 4,
+                '006_mustard_bottle' : 5,
+                '007_tuna_fish_can' : 6,
+                '008_pudding_box' : 7,
+                '009_gelatin_box' : 8,
+                '010_potted_meat_can' : 9,
+                '011_banana' : 10,
+                '019_pitcher_base' : 11,
+                '021_bleach_cleanser' : 12,
+                '024_bowl' : 13,
+                '025_mug' : 14,
+                '035_power_drill' : 15,
+                '036_wood_block' : 16,
+                '037_scissors' : 17,
+                '040_large_marker' : 18,
+                '051_large_clamp' : 19,
+                '052_extra_large_clamp' : 20,
+                '061_foam_brick' : 21
+                }
+
+	ckpt_root = '/home/user/iros20-6d-pose-tracking/YCB_weights/' + '_'.join(args.object_name.split('_')[1:])
+	ckpt_map = {
+                '002_master_chef_can' : ckpt_root + '/model_epoch180.pth.tar',
+                '003_cracker_box' : ckpt_root + '/model_epoch165.pth.tar',
+                '004_sugar_box' : ckpt_root + '/model_epoch150.pth.tar',
+                '005_tomato_soup_can' : ckpt_root + '/model_epoch270.pth.tar',
+                '006_mustard_bottle' : ckpt_root + '/model_epoch150.pth.tar',
+                '007_tuna_fish_can' : ckpt_root + '/model_epoch230.pth.tar',
+                '008_pudding_box' : ckpt_root + '/model_epoch180.pth.tar',
+                '009_gelatin_box' : ckpt_root + '/model_last.pth.tar',
+                '010_potted_meat_can' : ckpt_root + '/model_epoch210.pth.tar',
+                '011_banana' : ckpt_root + '/model_epoch160.pth.tar',
+                '019_pitcher_base' : ckpt_root + '/model_epoch160.pth.tar',
+                '021_bleach_cleanser' : ckpt_root + '/model_best_val.pth.tar',
+                '024_bowl' : ckpt_root + '/model_epoch225.pth.tar',
+                '025_mug' : ckpt_root + '/model_epoch235.pth.tar',
+                '035_power_drill' : ckpt_root + '/model_epoch215.pth.tar',
+                '036_wood_block' : ckpt_root + '/model_epoch175.pth.tar',
+                '037_scissors' : ckpt_root + '/model_best_val.pth.tar',
+                '040_large_marker' : ckpt_root + '/model_epoch240.pth.tar',
+                '051_large_clamp' : ckpt_root + '/model_epoch165.pth.tar',
+                '052_extra_large_clamp' : ckpt_root + '/model_best_val.pth.tar',
+                '061_foam_brick' : ckpt_root + '/model_epoch155.pth.tar'
+                }
+
+
+	ckpt_dir = ckpt_map[args.object_name]
+	images_mean = np.load(os.path.join(ckpt_root, "mean.npy"))
+	images_std = np.load(os.path.join(ckpt_root, "std.npy"))
+
+	dataset_info['models'][0]['model_path'] = '/home/user/iros20-6d-pose-tracking/datasets/YCB_Video_dataset/models/' + args.object_name + '/textured.ply'
+	dataset_info['models'][0]['obj_path'] = '/home/user/iros20-6d-pose-tracking/datasets/YCB_Video_dataset/models/' + args.object_name + '/textured.obj'
+
+
+	print('*********************************************************')
+	print(args.object_name)
+	print('dataset_info_path', dataset_info_path)
+	print('id: ' + str(names_map[args.object_name]))
+	print('video_id: ' + str(int(args.video_sequence)))
+	print('mean: ' + os.path.join(ckpt_root, "mean.npy"))
+	print('std: ' + os.path.join(ckpt_root, "std.npy"))
+	print('ckpt: ' + ckpt_dir)
+	print('ply: ' + dataset_info['models'][0]['model_path'])
+	print('obj: ' + dataset_info['models'][0]['obj_path'])
+	print('out: ' + outdir)
+	print('*********************************************************')
+
+	# images_mean = np.load(os.path.join(mean_std_path, "mean.npy"))
+	# images_std = np.load(os.path.join(mean_std_path, "std.npy"))
 
 	# predictSequenceYcb()
 	# getResultsYcb()
-	predictSequenceMyData()
-
-
+	# predictSequenceMyData()
