@@ -1,0 +1,21 @@
+boundingbox: 10
+camera:
+  centerX: 332.668884277344
+  centerY: 246.1035919189
+  focalX: 614.450317382812
+  focalY: 613.964599609375
+  height: 480
+  width: 640
+distribution: gauss
+models:
+- 0: null
+  model_path: /null
+  obj_path: /null
+
+
+resolution: 176
+train_samples: 200000
+val_samples: 2000
+renderer: pyrenderer
+max_translation: 0.02                # Meters
+max_rotation: 15                      #degree
