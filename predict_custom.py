@@ -371,4 +371,17 @@ if __name__ == '__main__':
         print('out: ' + outdir)
         print('*********************************************************')
 
-        predictSequenceYcb(args.sequence_path, init_pose)
+        predicted_poses = predictSequenceYcb(args.sequence_path, init_pose)
+
+        # Transform poses in the YCB reference frame
+        header = 'p_x,p_y,p_z,q_1,q_2,q_3,q_4'
+        output_data = np.zeros(shape = (predicted_poses.shape[0], 7))
+        for i in range(predicted_poses.shape[0]):
+                pose = predicted_poses[i, :] @ np.linalg.inv(transform)
+
+                quaternion = Quaternion(matrix = pose[0:3, 0:3])
+
+                output_data[i, 0:3] = pose[0:3, 3]
+                output_data[i, 3:7] = [quaternion.w, quaternion.x, quaternion.y, quaternion.z]
+
+        np.savetxt(os.path.join(outdir, args.sequence_path.split('/')[-1] + '_se3_pose.csv'), output_data, delimiter = ',', header = header)
