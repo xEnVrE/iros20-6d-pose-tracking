@@ -310,7 +310,7 @@ def predictSequenceYcb(path, gt, ycbv_to_ycb_transform):
                 for ii in range(len(uvs)):
                         cv2.circle(cur_bgr,(uvs[ii,0],uvs[ii,1]),radius=1,color=(0,255,255),thickness=-1)
                 cv2.putText(cur_bgr,"frame:{}".format(i), (W//2,H-50), cv2.FONT_HERSHEY_SIMPLEX, fontScale=1,thickness=4,color=(255,0,0))
-                cv2.imshow('1',cur_bgr)
+                # cv2.imshow('1',cur_bgr)
                 if debug:
                         cv2.imwrite(out_dir+'%07d.png'%(i),cur_bgr)
                 cur_bgr = cv2.resize(cur_bgr,(W//2,H//2))
