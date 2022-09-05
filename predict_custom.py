@@ -37,7 +37,8 @@ import multiprocessing as mp
 from vispy_renderer import VispyRenderer
 import json
 from pyquaternion import Quaternion
-
+from numpy import genfromtxt
+from tqdm import tqdm
 
 random.seed(0)
 np.random.seed(0)
@@ -243,6 +244,9 @@ def predictSequenceYcb(path, init_pose):
         test_data_path = os.path.join(path, path.split('/')[-1], 'photorealistic1/')
         out_dir = outdir
 
+        poses_indexes = genfromtxt(os.path.join(path, 'index.csv'))
+        poses_indexes = poses_indexes.astype(int)
+
         prev_pose = init_pose.copy()
         pred_poses = [prev_pose]
 
@@ -253,9 +257,7 @@ def predictSequenceYcb(path, init_pose):
         H = 480
         W = 640
 
-        i = 1
-        while True:
-                print('>>>>>>>>>>>>>>>>',i)
+        for i in tqdm(poses_indexes):
 
                 try:
                         rgb = np.array(Image.open(test_data_path + '/' + str(i).zfill(6) + '.png'))
@@ -284,20 +286,14 @@ def predictSequenceYcb(path, init_pose):
                 for ii in range(len(uvs)):
                         cv2.circle(cur_bgr,(uvs[ii,0],uvs[ii,1]),radius=1,color=(0,255,255),thickness=-1)
                 cv2.putText(cur_bgr,"frame:{}".format(i), (W//2,H-50), cv2.FONT_HERSHEY_SIMPLEX, fontScale=1,thickness=4,color=(255,0,0))
-                # cv2.imshow('1',cur_bgr)
+
                 if debug:
                         cv2.imwrite(out_dir+'%07d.png'%(i),cur_bgr)
                 cur_bgr = cv2.resize(cur_bgr,(W//2,H//2))
-                if i==1:
-                        cv2.waitKey(1)
-                else:
-                        cv2.waitKey(1)
 
-                i += 8
         pred_poses = np.array(pred_poses)
 
-        for i in range(len(pred_poses)):
-                np.savetxt(out_dir+'%05d.txt'%(i), pred_poses[i])
+        return pred_poses
 
 if __name__ == '__main__':
         parser = argparse.ArgumentParser()
