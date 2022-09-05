@@ -238,49 +238,23 @@ def load_gt(path):
         return pose
 
 
-def predictSequenceYcb(path, gt, ycbv_to_ycb_transform):
+def predictSequenceYcb(path, init_pose):
         debug = True
-        init = 'gt'
-        test_data_path = path
-        start_frame = 0
-        reinit_frames = ''
-        samples = 1
-        # rgb_files = glob.glob(os.path.join(test_data_path,'*.png'))
-        # rgb_files.sort()
-        # depth_files = glob.glob(os.path.join(test_data_path,'depth_filled/*'))
-        # depth_files.sort()
-        gt_poses = []
-        gt_poses.append(gt)
-        # gt_pose_files = glob.glob(os.path.join(test_data_path,'pose_gt/{}/*'.format(class_id)))
-        # gt_pose_files.sort()
-        # for f in gt_pose_files:
-        #         gt = np.loadtxt(f)
-        #         gt_poses.append(gt)
-        #         # break
-        # gt pose is 4, 4
-        # rgb is (480, 640, 3)
-        # depth is (480, 640)
+        test_data_path = os.path.join(path, path.split('/')[-1], 'photorealistic1/')
+        out_dir = outdir
+
+        prev_pose = init_pose.copy()
+        pred_poses = [prev_pose]
 
         tracker = Tracker(dataset_info, images_mean, images_std,ckpt_dir)
-        print('gt_poses[0]=\n',gt_poses[start_frame])
-
-        prev_pose = gt_poses[start_frame].copy()
-
-        pred_poses = [prev_pose]
-        prev_second_pose = None
 
         K = tracker.K.copy()
 
-        out_dir = outdir
-        os.makedirs(out_dir,exist_ok=True)
-        # tmp = cv2.imread(depth_files[0],cv2.IMREAD_UNCHANGED)
         H = 480
         W = 640
 
-        i = start_frame + 1
+        i = 1
         while True:
-        # for i in range(start_frame+1,len(rgb_files)):
-                # if i%100==0:
                 print('>>>>>>>>>>>>>>>>',i)
 
                 try:
@@ -296,7 +270,7 @@ def predictSequenceYcb(path, gt, ycbv_to_ycb_transform):
                 depth = cv2.imread(test_data_path + '/' + str(i).zfill(6) + '.depth.mm.16.png', cv2.IMREAD_UNCHANGED).astype(np.uint16)
 
                 A_in_cam = prev_pose.copy()
-                cur_pose = tracker.on_track(A_in_cam, rgb, depth, gt_B_in_cam=None, debug=False,samples=samples)
+                cur_pose = tracker.on_track(A_in_cam, rgb, depth, gt_B_in_cam=None, debug=False,samples=1)
                 A_in_cam = cur_pose.copy()
 
                 prev_pose = cur_pose.copy()
@@ -323,27 +297,27 @@ def predictSequenceYcb(path, gt, ycbv_to_ycb_transform):
         pred_poses = np.array(pred_poses)
 
         for i in range(len(pred_poses)):
-                np.savetxt(out_dir+'%05d.txt'%(i), pred_poses[i] @ ycbv_to_ycb_transform)
-                # np.savetxt(out_dir+'%05dgt.txt'%(i),gt_poses[i])
-
-        print('reinit_frames {}'.format(reinit_frames))
-
+                np.savetxt(out_dir+'%05d.txt'%(i), pred_poses[i])
 
 if __name__ == '__main__':
         parser = argparse.ArgumentParser()
         parser.add_argument('--ycb_dir', default='/home/user/iros20-6d-pose-tracking/datasets/YCB_Video_Dataset')
         parser.add_argument('--sequence_path')
-        parser.add_argument('--object_name', type=str)
 
         args = parser.parse_args()
 
         outdir = args.sequence_path + '/output/'
+        os.makedirs(outdir, exist_ok = True)
 
         dataset_info_path = './info_custom.yml'
         with open(dataset_info_path,'r') as ff:
                 dataset_info = yaml.safe_load(ff)
 
-        ckpt_root = '/home/user/iros20-6d-pose-tracking/YCB_weights/' + '_'.join(args.object_name.split('_')[1:])
+        object_name = ''
+        with open(args.sequence_path + '/object_name.txt', 'r') as ff:
+                object_name = ff.readline().rstrip('\n')
+
+        ckpt_root = '/home/user/iros20-6d-pose-tracking/YCB_weights/' + '_'.join(object_name.split('_')[1:])
         ckpt_map = {
                 '002_master_chef_can' : ckpt_root + '/model_epoch180.pth.tar',
                 '003_cracker_box' : ckpt_root + '/model_epoch165.pth.tar',
@@ -369,15 +343,15 @@ if __name__ == '__main__':
                 }
 
 
-        ckpt_dir = ckpt_map[args.object_name]
+        ckpt_dir = ckpt_map[object_name]
         images_mean = np.load(os.path.join(ckpt_root, "mean.npy"))
         images_std = np.load(os.path.join(ckpt_root, "std.npy"))
 
-        dataset_info['models'][0]['model_path'] = '/home/user/iros20-6d-pose-tracking/datasets/YCB_Video_Dataset/CADmodels/' + args.object_name + '/textured.ply'
-        dataset_info['models'][0]['obj_path'] = '/home/user/iros20-6d-pose-tracking/datasets/YCB_Video_Dataset/models/' + args.object_name + '/textured.obj'
+        dataset_info['models'][0]['model_path'] = '/home/user/iros20-6d-pose-tracking/datasets/YCB_Video_Dataset/CADmodels/' + object_name + '/textured.ply'
+        dataset_info['models'][0]['obj_path'] = '/home/user/iros20-6d-pose-tracking/datasets/YCB_Video_Dataset/models/' + object_name + '/textured.obj'
 
         # Evaluate YCB to YCBV transformation
-        ycb_mesh_path = '/home/user/iros20-6d-pose-tracking/datasets/Dataset_Utilities/nvdu/data/ycb/original/' + args.object_name + '/google_16k/textured.obj'
+        ycb_mesh_path = '/home/user/iros20-6d-pose-tracking/datasets/Dataset_Utilities/nvdu/data/ycb/original/' + object_name + '/google_16k/textured.obj'
         ycb_mesh = trimesh.load(ycb_mesh_path)
 
         ycbv_mesh_path = dataset_info['models'][0]['obj_path']
@@ -386,13 +360,12 @@ if __name__ == '__main__':
         transform = np.eye(4)
         transform[0:3, 3] = ycb_mesh.centroid - ycbv_mesh.centroid
 
-        # Extract GT in YCB frame
-        # gt_pose = extract_gt(args.sequence_path)
-        gt_pose = load_gt(args.sequence_path)
-        gt_pose = gt_pose @ transform
+        # Extract initial pose in YCB frame
+        init_pose = load_gt(args.sequence_path)
+        init_pose = init_pose @ transform
 
         print('*********************************************************')
-        print(args.object_name)
+        print(object_name)
         print('dataset_info_path', dataset_info_path)
         print('mean: ' + os.path.join(ckpt_root, "mean.npy"))
         print('std: ' + os.path.join(ckpt_root, "std.npy"))
@@ -402,4 +375,4 @@ if __name__ == '__main__':
         print('out: ' + outdir)
         print('*********************************************************')
 
-        predictSequenceYcb(args.sequence_path, gt_pose, np.linalg.inv(transform))
+        predictSequenceYcb(args.sequence_path, init_pose)
