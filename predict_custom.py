@@ -229,6 +229,15 @@ def extract_gt(path):
         return pose
 
 
+def load_gt(path):
+        data = np.loadtxt(path + '/dope_poses_ycb.txt')
+
+        pose = Quaternion(axis = data[0, 3:6], angle = data[0, 6]).transformation_matrix
+        pose[0:3, 3] = data[0, 0:3]
+
+        return pose
+
+
 def predictSequenceYcb(path, gt, ycbv_to_ycb_transform):
         debug = True
         init = 'gt'
@@ -378,7 +387,8 @@ if __name__ == '__main__':
         transform[0:3, 3] = ycb_mesh.centroid - ycbv_mesh.centroid
 
         # Extract GT in YCB frame
-        gt_pose = extract_gt(args.sequence_path)
+        # gt_pose = extract_gt(args.sequence_path)
+        gt_pose = load_gt(args.sequence_path)
         gt_pose = gt_pose @ transform
 
         print('*********************************************************')
