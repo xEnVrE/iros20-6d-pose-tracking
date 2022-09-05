@@ -379,7 +379,9 @@ if __name__ == '__main__':
         for i in range(predicted_poses.shape[0]):
                 pose = predicted_poses[i, :] @ np.linalg.inv(transform)
 
-                quaternion = Quaternion(matrix = pose[0:3, 0:3])
+                u, s, vh = np.linalg.svd(pose[0:3, 0:3], full_matrices=False)
+                quaternion = Quaternion(matrix = u @ vh)
+
 
                 output_data[i, 0:3] = pose[0:3, 3]
                 output_data[i, 3:7] = [quaternion.w, quaternion.x, quaternion.y, quaternion.z]
