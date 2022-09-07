@@ -259,6 +259,9 @@ def predictSequenceYcb(path, init_pose):
 
         for i in tqdm(poses_indexes):
 
+                if i == 0:
+                        continue
+
                 try:
                         rgb = np.array(Image.open(test_data_path + '/' + str(i).zfill(6) + '.png'))
                 except FileNotFoundError as e:
