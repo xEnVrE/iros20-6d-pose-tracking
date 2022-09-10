@@ -6,7 +6,7 @@ for object in <objects> ; do
         echo "******************************************************************"
         cd /home/user/iros20-6d-pose-tracking
         if [ -d "/home/user/iros20-6d-pose-tracking/datasets/$object/$item/output/" ]; then
-           rm -r /home/user/iros20-6d-pose-tracking/datasets/$object/$$item/output
+           rm -r /home/user/iros20-6d-pose-tracking/datasets/$object/$item/output
         fi
         python /home/user/iros20-6d-pose-tracking/predict_custom.py --sequence_path /home/user/iros20-6d-pose-tracking/datasets/$object/$item
         cd /home/user/iros20-6d-pose-tracking/datasets/$object/$item/output
