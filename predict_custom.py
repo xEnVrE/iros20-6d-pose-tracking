@@ -311,14 +311,17 @@ def predictSequenceYcb(path, init_pose, sequence_type):
 if __name__ == '__main__':
         parser = argparse.ArgumentParser()
         parser.add_argument('--ycb_dir', default='/home/user/iros20-6d-pose-tracking/datasets/YCB_Video_Dataset')
-        parser.add_argument('--sequence_path')
+        parser.add_argument('--sequence_path', type = str)
+        parser.add_argument('--sequence_type', type = str, default = 'synthetic')
 
         args = parser.parse_args()
 
         outdir = args.sequence_path + '/output/'
         os.makedirs(outdir, exist_ok = True)
 
-        dataset_info_path = './info_custom.yml'
+        dataset_info_path = './info_synthetic.yml'
+        if args.sequence_type == 'real':
+                dataset_info_path = './info_real.yml'
         with open(dataset_info_path,'r') as ff:
                 dataset_info = yaml.safe_load(ff)
 
