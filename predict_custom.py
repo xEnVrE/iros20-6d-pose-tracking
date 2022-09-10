@@ -230,7 +230,7 @@ def extract_gt(path):
         return pose
 
 
-def load_gt(path):
+def load_dope_pose(path):
         data = np.loadtxt(path + '/dope_poses_ycb.txt')
 
         pose = Quaternion(axis = data[0, 3:6], angle = data[0, 6]).transformation_matrix
@@ -360,7 +360,7 @@ if __name__ == '__main__':
         transform[0:3, 3] = ycb_mesh.centroid - ycbv_mesh.centroid
 
         # Extract initial pose in YCB frame
-        init_pose = load_gt(args.sequence_path)
+        init_pose = load_dope_pose(args.sequence_path)
         init_pose = init_pose @ transform
 
         print('*********************************************************')
