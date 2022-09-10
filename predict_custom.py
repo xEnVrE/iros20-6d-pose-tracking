@@ -239,13 +239,23 @@ def load_dope_pose(path):
         return pose
 
 
-def predictSequenceYcb(path, init_pose):
+def predictSequenceYcb(path, init_pose, sequence_type):
         debug = True
         test_data_path = os.path.join(path, path.split('/')[-1], 'photorealistic1/')
+        depth_postfix = '.depth.mm.16.png'
+
+        if sequence_type == 'real':
+                test_data_path = os.path.join(path, 'photorealistic1/')
+                depth_postfix = '.depth.png'
+
         out_dir = outdir
 
-        poses_indexes = genfromtxt(os.path.join(path, 'index.csv'))
-        poses_indexes = poses_indexes.astype(int)
+        if sequence_type == 'synthetic':
+                poses_indexes = genfromtxt(os.path.join(path, 'index.csv'))
+                poses_indexes = poses_indexes.astype(int)
+        elif sequence_type == 'real':
+                rgb_file_list = glob.glob(test_data_path + '/*.depth.png')
+                poses_indexes = np.array(range(len(rgb_file_list)))
 
         prev_pose = init_pose.copy()
         pred_poses = [prev_pose]
@@ -272,7 +282,7 @@ def predictSequenceYcb(path, init_pose):
                 if rgb is None:
                         break
                 rgb_viz = rgb.copy()
-                depth = cv2.imread(test_data_path + '/' + str(i).zfill(6) + '.depth.mm.16.png', cv2.IMREAD_UNCHANGED).astype(np.uint16)
+                depth = cv2.imread(test_data_path + '/' + str(i).zfill(6) + depth_postfix, cv2.IMREAD_UNCHANGED).astype(np.uint16)
 
                 A_in_cam = prev_pose.copy()
                 cur_pose = tracker.on_track(A_in_cam, rgb, depth, gt_B_in_cam=None, debug=False,samples=1)
@@ -374,7 +384,9 @@ if __name__ == '__main__':
         print('out: ' + outdir)
         print('*********************************************************')
 
-        predicted_poses = predictSequenceYcb(args.sequence_path, init_pose)
+        predicted_poses = predictSequenceYcb(args.sequence_path, init_pose, args.sequence_type)
+        print('Number of poses:')
+        print(predicted_poses.shape)
 
         # Transform poses in the YCB reference frame
         header = 'p_x,p_y,p_z,q_1,q_2,q_3,q_4'
